@@ -20,6 +20,36 @@ with st.sidebar:
     st.caption("企业级自然语言数据分析")
     st.divider()
 
+    # Login
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+
+    if not st.session_state.logged_in:
+        st.subheader("🔐 登录")
+        uname = st.text_input("用户名", value="demo")
+        pwd = st.text_input("密码", type="password", value="demo123")
+        if st.button("登录", use_container_width=True):
+            try:
+                r = httpx.post("http://localhost:8000/api/login",
+                               json={"username": uname, "password": pwd}, timeout=5)
+                if r.json().get("success"):
+                    st.session_state.logged_in = True
+                    st.session_state.username = uname
+                    st.rerun()
+                else:
+                    st.error("用户名或密码错误")
+            except Exception:
+                st.error("无法连接服务器")
+        st.divider()
+        st.caption("演示账号: admin/admin123 或 demo/demo123")
+        st.stop()  # 未登录不显示主界面
+
+    st.success(f"👤 {st.session_state.username}")
+    if st.button("退出登录", use_container_width=True):
+        st.session_state.logged_in = False
+        st.rerun()
+
     if "session_id" not in st.session_state:
         st.session_state.session_id = f"sess_{uuid.uuid4().hex[:12]}"
     if "history" not in st.session_state:

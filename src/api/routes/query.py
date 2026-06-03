@@ -8,7 +8,9 @@ from src.config import get_settings
 from src.models.ollama import OllamaClient
 from src.models.openai_compat import OpenAICompatClient
 from src.db.connection import init_db
+from src.utils.data_masker import is_sensitive_column, mask_dataframe
 import structlog
+import pandas as pd
 
 logger = structlog.get_logger("api.query")
 
@@ -59,6 +61,17 @@ async def query_data(req: QueryRequest):
             config=config,
         )
 
+        # 数据脱敏
+        columns = result.get("query_columns", [])
+        rows = result.get("query_rows", [])
+        sensitive_cols = [c for c in columns if is_sensitive_column(c)]
+        if sensitive_cols and rows:
+            import pandas as pd
+            df = pd.DataFrame(rows, columns=columns)
+            masked = mask_dataframe(df, sensitive_cols)
+            rows = masked["rows"]
+            logger.info("Data masked", columns=sensitive_cols, masked_count=len(masked.get("masked", [])))
+
         elapsed = (time.time() - start) * 1000
 
         response = QueryResponse(
@@ -69,8 +82,8 @@ async def query_data(req: QueryRequest):
             sql_explanation=result.get("sql_explanation", ""),
             sql_assumptions=result.get("sql_assumptions", []),
             sql_risk_level=result.get("sql_risk_level", "safe"),
-            columns=result.get("query_columns", []),
-            rows=result.get("query_rows", []),
+            columns=columns,
+            rows=rows,
             row_count=result.get("query_row_count", 0),
             truncated=result.get("query_truncated", False),
             interpretation=result.get("interpretation", ""),
