@@ -1,11 +1,14 @@
 """NL2BI Agent — Streamlit Web 界面"""
 import os
+import io
 import uuid
+import time
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
 import pandas as pd
 import httpx
+from io import BytesIO
 
 os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
 
@@ -190,6 +193,17 @@ if go_btn and query.strip():
                     # Table
                     st.subheader("📋 查询结果")
                     st.dataframe(df, use_container_width=True)
+
+                    # Excel download
+                    output = BytesIO()
+                    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+                        df.to_excel(writer, index=False, sheet_name='查询结果')
+                    st.download_button(
+                        label="📥 下载 Excel",
+                        data=output.getvalue(),
+                        file_name=f"NL2BI_{time.strftime('%Y%m%d_%H%M%S')}.xlsx",
+                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    )
 
                 # ── Report Results ──
                 report_data = data.get("report_data", [])
