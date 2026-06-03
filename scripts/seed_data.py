@@ -54,7 +54,7 @@ async def seed(conn_str: str, num_orders: int = 50000):
         products = generate_products(200)
         for p in products:
             await session.execute(
-                text("INSERT INTO products (product_name, category, unit_price, cost_price, supplier) VALUES (:n, :c, :u, :co, :s)"),
+                text("INSERT INTO products (product_name, category, unit_price, cost_price, supplier) VALUES (:product_name, :category, :unit_price, :cost_price, :supplier)"),
                 p
             )
         await session.flush()
@@ -73,7 +73,7 @@ async def seed(conn_str: str, num_orders: int = 50000):
 
         for c in customers:
             await session.execute(
-                text("INSERT INTO customers (name, region, province, city, channel, created_at) VALUES (:n, :r, :p, :ci, :ch, :cr)"),
+                text("INSERT INTO customers (name, region, province, city, channel, created_at) VALUES (:name, :region, :province, :city, :channel, :created_at)"),
                 c
             )
         await session.flush()
@@ -132,7 +132,7 @@ async def seed(conn_str: str, num_orders: int = 50000):
         result = await session.execute(text("SELECT order_id, total_amount FROM orders WHERE status IN ('returned','cancelled') ORDER BY RANDOM() LIMIT :n"), {"n": int(num_orders * 0.03)})
         refund_count = 0
         for row in result.fetchall():
-            order_id, total = row
+            order_id, total = int(row[0]), float(row[1])
             await session.execute(
                 text("INSERT INTO refunds (order_id, refund_amount, refund_reason, refund_date) VALUES (:oid, :amt, :reason, :rd)"),
                 {"oid": order_id, "amt": round(total * random.uniform(0.5, 1.0), 2),

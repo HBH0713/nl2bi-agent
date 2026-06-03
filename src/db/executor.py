@@ -34,7 +34,6 @@ async def execute_query(
 
     try:
         await session.execute(text(f"SET LOCAL statement_timeout = '{timeout_s}s'"))
-        await session.execute(text(f"SET LOCAL max_rows = {max_rows}"))
         if settings.sql_read_only:
             await session.execute(text("SET LOCAL default_transaction_read_only = on"))
 
@@ -65,8 +64,6 @@ async def execute_query(
 
         if "statement_timeout" in error_msg.lower() or "canceling statement" in error_msg.lower():
             error_msg = f"查询超时（>{timeout_s}秒）。请尝试缩小查询范围。"
-        elif "max_rows" in error_msg.lower():
-            error_msg = f"返回行数超过限制（{max_rows}行）。请添加更多过滤条件。"
 
         logger.error("Query failed", sql=sql[:300], error=error_msg, elapsed_ms=round(elapsed))
 

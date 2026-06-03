@@ -14,18 +14,24 @@ logger = structlog.get_logger("main")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
-    logger.info("Starting NL2BI Agent API server")
+    logger.info("NL2BI Agent 服务启动中")
     init_db()
     yield
     await close_db()
-    logger.info("NL2BI Agent API server stopped")
+    logger.info("NL2BI Agent 服务已停止")
 
 
 app = FastAPI(
-    title="NL2BI Agent API",
-    description="Natural Language to Business Intelligence Agent",
+    title="NL2BI Agent — 企业级自然语言数据分析平台",
+    description="基于 LangGraph + FastAPI 的智能数据分析 Agent，支持自然语言转 SQL、自动报表生成。",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_tags=[
+        {"name": "数据查询", "description": "自然语言查询数据库，自动生成 SQL 并返回分析结果。"},
+        {"name": "系统健康", "description": "检查各组件（数据库、Ollama、ChromaDB）运行状态。"},
+    ],
 )
 
 app.add_middleware(RequestLoggingMiddleware)
@@ -41,6 +47,11 @@ app.include_router(query_router)
 app.include_router(health_router)
 
 
-@app.get("/")
+@app.get("/", tags=["系统信息"])
 async def root():
-    return {"message": "NL2BI Agent API is running", "docs": "/docs"}
+    return {
+        "服务": "NL2BI Agent API",
+        "版本": "0.1.0",
+        "文档": "/docs",
+        "状态": "运行中",
+    }

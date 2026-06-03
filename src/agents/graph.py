@@ -120,16 +120,26 @@ async def reject_handler(state: AgentState) -> dict:
 def build_agent_graph(router: ModelRouter) -> StateGraph:
     workflow = StateGraph(AgentState)
 
-    # 节点（用闭包捕获 router）
-    workflow.add_node("intent_classifier", lambda s: intent_classifier(s, router))
-    workflow.add_node("chitchat_handler", lambda s: chitchat_handler(s, router))
-    workflow.add_node("report_handler", report_handler)
-    workflow.add_node("schema_rag", schema_rag_retriever)
-    workflow.add_node("sql_generator", lambda s: sql_generator(s, router))
-    workflow.add_node("sql_validator", lambda s: sql_validator(s, router))
-    workflow.add_node("executor", sql_executor_node)
-    workflow.add_node("interpreter", lambda s: interpreter(s, router))
-    workflow.add_node("reject_handler", reject_handler)
+    # 节点 — 必须是 async 函数，LangGraph 会自动 await
+    async def _intent_classifier(s): return await intent_classifier(s, router)
+    async def _chitchat_handler(s): return await chitchat_handler(s, router)
+    async def _report_handler(s): return await report_handler(s)
+    async def _schema_rag(s): return await schema_rag_retriever(s)
+    async def _sql_generator(s): return await sql_generator(s, router)
+    async def _sql_validator(s): return await sql_validator(s, router)
+    async def _executor(s): return await sql_executor_node(s)
+    async def _interpreter(s): return await interpreter(s, router)
+    async def _reject_handler(s): return await reject_handler(s)
+
+    workflow.add_node("intent_classifier", _intent_classifier)
+    workflow.add_node("chitchat_handler", _chitchat_handler)
+    workflow.add_node("report_handler", _report_handler)
+    workflow.add_node("schema_rag", _schema_rag)
+    workflow.add_node("sql_generator", _sql_generator)
+    workflow.add_node("sql_validator", _sql_validator)
+    workflow.add_node("executor", _executor)
+    workflow.add_node("interpreter", _interpreter)
+    workflow.add_node("reject_handler", _reject_handler)
 
     # 边
     workflow.set_entry_point("intent_classifier")

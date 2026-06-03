@@ -12,7 +12,7 @@ import structlog
 
 logger = structlog.get_logger("api.query")
 
-router = APIRouter(prefix="/api", tags=["query"])
+router = APIRouter(prefix="/api", tags=["数据查询"])
 
 _agent_graph = None
 _router: ModelRouter = None
@@ -39,7 +39,12 @@ def get_agent():
     return _agent_graph
 
 
-@router.post("/query", response_model=QueryResponse)
+@router.post(
+    "/query",
+    response_model=QueryResponse,
+    summary="自然语言查询",
+    description="输入中文问题，自动完成意图识别 → 表结构检索 → SQL 生成 → 安全校验 → 执行 → 结果解读的完整链路。",
+)
 async def query_data(req: QueryRequest):
     start = time.time()
     request_id = str(uuid.uuid4())[:8]

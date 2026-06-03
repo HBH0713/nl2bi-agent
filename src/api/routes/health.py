@@ -5,10 +5,15 @@ from src.db.chroma_client import get_chroma_client
 import structlog
 
 logger = structlog.get_logger("api.health")
-router = APIRouter(tags=["health"])
+router = APIRouter(tags=["系统健康"])
 
 
-@router.get("/api/health", response_model=HealthResponse)
+@router.get(
+    "/api/health",
+    response_model=HealthResponse,
+    summary="系统健康检查",
+    description="检查 PostgreSQL 数据库、Ollama 本地模型、ChromaDB 向量库的连接状态。",
+)
 async def health_check():
     settings = get_settings()
 
