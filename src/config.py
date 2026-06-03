@@ -1,5 +1,8 @@
+from urllib.parse import quote
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 from functools import lru_cache
+import logging
 
 
 class Settings(BaseSettings):
@@ -13,7 +16,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         return (
-            f"postgresql+asyncpg://{self.pg_user}:{self.pg_password}"
+            f"postgresql+asyncpg://{self.pg_user}:{quote(self.pg_password, safe='')}"
             f"@{self.pg_host}:{self.pg_port}/{self.pg_database}"
         )
 
@@ -38,9 +41,25 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
     log_format: str = "json"
 
+    @field_validator("log_level")
+    @classmethod
+    def validate_log_level(cls, v: str) -> str:
+        level = v.upper()
+        if level not in logging._nameToLevel:
+            raise ValueError(f"Invalid log level: {v}. Must be one of: {list(logging._nameToLevel.keys())}")
+        return level
+
+    @field_validator("log_format")
+    @classmethod
+    def validate_log_format(cls, v: str) -> str:
+        fmt = v.lower()
+        if fmt not in ("json", "console"):
+            raise ValueError(f"Invalid log format: {v}. Must be 'json' or 'console'.")
+        return fmt
+
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 
 
-@lru_cache()
+@lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()

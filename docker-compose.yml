@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: bi_postgres
+    environment:
+      POSTGRES_DB: bi_demo
+      POSTGRES_USER: bi_agent
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./data/sample_db.sql:/docker-entrypoint-initdb.d/01_init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bi_agent -d bi_demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: bi_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  chromadb:
+    image: chromadb/chroma:latest
+    container_name: bi_chromadb
+    ports:
+      - "8001:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+
+  api:
+    build: .
+    container_name: bi_api
+    ports:
+      - "8000:8000"
+    environment:
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DATABASE=bi_demo
+      - PG_USER=bi_agent
+      - PG_PASSWORD=${PG_PASSWORD:-changeme}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - CHROMA_PERSIST_DIR=/app/chroma_data
+      - LOG_FORMAT=json
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      chromadb:
+        condition: service_started
+    volumes:
+      - chroma_data:/app/chroma_data
+
+volumes:
+  pgdata:
+  ollama_data:
+  chroma_data:

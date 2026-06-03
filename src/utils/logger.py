@@ -1,9 +1,17 @@
-import structlog
 import logging
+
+import structlog
+
 from src.config import get_settings
+
+_setup_complete = False
 
 
 def setup_logging() -> None:
+    global _setup_complete
+    if _setup_complete:
+        return
+
     settings = get_settings()
 
     shared_processors = [
@@ -11,7 +19,6 @@ def setup_logging() -> None:
         structlog.stdlib.add_logger_name,
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.contextvars.merge_contextvars,
-        structlog.processors.UnicodeDecoder(),
     ]
 
     if settings.log_format == "json":
@@ -40,7 +47,9 @@ def setup_logging() -> None:
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
     root_logger.addHandler(handler)
-    root_logger.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
+    root_logger.setLevel(getattr(logging, settings.log_level, logging.INFO))
+
+    _setup_complete = True
 
 
 def get_logger(name: str) -> structlog.stdlib.BoundLogger:
