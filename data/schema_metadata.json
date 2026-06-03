@@ -1,0 +1,82 @@
+{
+  "tables": [
+    {
+      "table_name": "customers",
+      "description": "客户信息表：存储所有注册客户的基本信息，包括所属区域、获客渠道",
+      "columns": [
+        {"name": "customer_id", "type": "SERIAL", "description": "客户唯一标识", "sample_values": [1001, 1002, 1003]},
+        {"name": "name", "type": "VARCHAR(100)", "description": "客户姓名", "sample_values": ["张三", "李四", "王五"]},
+        {"name": "region", "type": "VARCHAR(20)", "description": "所属大区", "sample_values": ["华东", "华南", "华北", "西南", "西北", "东北"]},
+        {"name": "province", "type": "VARCHAR(50)", "description": "省份", "sample_values": ["浙江", "广东", "四川"]},
+        {"name": "city", "type": "VARCHAR(50)", "description": "城市", "sample_values": ["杭州", "广州", "成都"]},
+        {"name": "channel", "type": "VARCHAR(20)", "description": "获客渠道", "sample_values": ["官网", "APP", "小程序", "地推", "合作伙伴"]},
+        {"name": "created_at", "type": "TIMESTAMP", "description": "注册时间"}
+      ],
+      "row_count_estimate": 10000
+    },
+    {
+      "table_name": "products",
+      "description": "产品信息表：存储所有在售产品的信息",
+      "columns": [
+        {"name": "product_id", "type": "SERIAL", "description": "产品唯一标识"},
+        {"name": "product_name", "type": "VARCHAR(200)", "description": "产品名称"},
+        {"name": "category", "type": "VARCHAR(50)", "description": "产品类目：电子产品/家居用品/服装鞋帽/食品饮料/美妆个护"},
+        {"name": "unit_price", "type": "DECIMAL(10,2)", "description": "销售单价（元）"},
+        {"name": "cost_price", "type": "DECIMAL(10,2)", "description": "成本单价（元）"},
+        {"name": "supplier", "type": "VARCHAR(100)", "description": "供应商名称"},
+        {"name": "created_at", "type": "TIMESTAMP", "description": "上架时间"}
+      ],
+      "row_count_estimate": 500
+    },
+    {
+      "table_name": "orders",
+      "description": "订单主表：存储每笔订单的汇总信息。关键字段：order_date下单日期、total_amount订单总金额、status订单状态、region区域",
+      "columns": [
+        {"name": "order_id", "type": "SERIAL", "description": "订单唯一标识"},
+        {"name": "customer_id", "type": "INT", "description": "关联 customers.customer_id"},
+        {"name": "order_date", "type": "DATE", "description": "下单日期，格式 YYYY-MM-DD"},
+        {"name": "status", "type": "VARCHAR(20)", "description": "订单状态：pending待支付/confirmed已确认/shipped已发货/delivered已签收/cancelled已取消/returned已退货"},
+        {"name": "total_amount", "type": "DECIMAL(12,2)", "description": "订单总金额（元），已扣除折扣后的实付金额"},
+        {"name": "discount_amount", "type": "DECIMAL(12,2)", "description": "折扣金额（元）"},
+        {"name": "region", "type": "VARCHAR(20)", "description": "订单所属区域"},
+        {"name": "channel", "type": "VARCHAR(20)", "description": "下单渠道"}
+      ],
+      "row_count_estimate": 100000
+    },
+    {
+      "table_name": "order_items",
+      "description": "订单明细表：每笔订单中每个产品的购买明细。关联 orders 和 products",
+      "columns": [
+        {"name": "item_id", "type": "SERIAL", "description": "明细唯一标识"},
+        {"name": "order_id", "type": "INT", "description": "关联 orders.order_id"},
+        {"name": "product_id", "type": "INT", "description": "关联 products.product_id"},
+        {"name": "quantity", "type": "INT", "description": "购买数量"},
+        {"name": "unit_price", "type": "DECIMAL(10,2)", "description": "下单时的单价"},
+        {"name": "subtotal", "type": "DECIMAL(12,2)", "description": "小计 = quantity × unit_price（生成列）"}
+      ],
+      "row_count_estimate": 300000
+    },
+    {
+      "table_name": "refunds",
+      "description": "退款记录表：存储所有退款申请和完成记录",
+      "columns": [
+        {"name": "refund_id", "type": "SERIAL", "description": "退款唯一标识"},
+        {"name": "order_id", "type": "INT", "description": "关联 orders.order_id"},
+        {"name": "refund_amount", "type": "DECIMAL(12,2)", "description": "退款金额（元）"},
+        {"name": "refund_reason", "type": "VARCHAR(200)", "description": "退款原因"},
+        {"name": "refund_date", "type": "DATE", "description": "退款日期，格式 YYYY-MM-DD"}
+      ],
+      "row_count_estimate": 5000
+    }
+  ],
+  "business_terms": [
+    {"term": "销售额", "description": "已确认和已发货订单的总金额，即 SUM(total_amount) WHERE status IN ('confirmed','shipped','delivered')", "sql_fragment": "SUM(o.total_amount)"},
+    {"term": "订单量", "description": "订单总数，即 COUNT(order_id)", "sql_fragment": "COUNT(o.order_id)"},
+    {"term": "客单价", "description": "平均每单金额 = 销售额 / 订单量", "sql_fragment": "SUM(o.total_amount) / COUNT(o.order_id)"},
+    {"term": "退款率", "description": "退款金额 / 销售额 * 100%", "sql_fragment": "SUM(r.refund_amount) / SUM(o.total_amount) * 100"},
+    {"term": "毛利率", "description": "(销售额 - 成本) / 销售额 * 100%", "sql_fragment": "(SUM(oi.subtotal) - SUM(oi.quantity * p.cost_price)) / SUM(oi.subtotal) * 100"},
+    {"term": "转化率", "description": "下单客户数 / 总客户数 * 100%", "sql_fragment": "COUNT(DISTINCT o.customer_id)::FLOAT / COUNT(DISTINCT c.customer_id) * 100"},
+    {"term": "退货率", "description": "退货订单数 / 总订单数 * 100%", "sql_fragment": "COUNT(CASE WHEN o.status='returned' THEN 1 END)::FLOAT / COUNT(o.order_id) * 100"},
+    {"term": "复购率", "description": "下单次数 > 1 的客户数 / 总下单客户数 * 100%", "sql_fragment": "COUNT(DISTINCT CASE WHEN order_count>1 THEN customer_id END)::FLOAT / COUNT(DISTINCT customer_id) * 100"}
+  ]
+}
