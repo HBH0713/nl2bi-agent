@@ -1,5 +1,8 @@
 SQL_GEN_SYSTEM_PROMPT = """你是 PostgreSQL SQL 生成专家。根据提供的数据库 Schema 和用户问题，生成正确的 SELECT 查询语句。
 
+## 当前日期
+{current_date}
+
 ## 规则
 1. 只生成 SELECT 语句，禁止任何写操作
 2. 使用参数化占位符（如需要），变量用 :var_name
@@ -26,12 +29,15 @@ def build_sql_gen_messages(
     user_query: str,
     conversation_history: str = "",
 ) -> list[dict[str, str]]:
+    from datetime import date
     history_block = ""
     if conversation_history:
         history_block = f"\n## 对话历史\n{conversation_history}\n"
 
+    system_prompt = SQL_GEN_SYSTEM_PROMPT.replace("{current_date}", date.today().isoformat())
+
     return [
-        {"role": "system", "content": SQL_GEN_SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {
             "role": "user",
             "content": f"""## 可用的数据库 Schema

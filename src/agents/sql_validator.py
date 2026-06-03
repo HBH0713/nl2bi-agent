@@ -1,6 +1,7 @@
 import json
 from src.agents.state import AgentState
 from src.utils.sql_parser import validate_sql
+from src.utils.json_parser import parse_llm_json
 from src.models.router import ModelRouter, ModelTask
 import structlog
 
@@ -50,6 +51,6 @@ async def _semantic_check(sql: str, query: str, router: ModelRouter) -> dict:
             {"role": "user", "content": f"用户问题: {query}\nSQL: {sql}\n请检查逻辑是否一致，重点关注：表选择是否正确、WHERE 条件是否遗漏、聚合逻辑是否合理。"},
         ]
         response = await router.chat_json(task=ModelTask.SQL_VALIDATE, messages=messages, temperature=0.0)
-        return json.loads(response.content)
+        return parse_llm_json(response.content)
     except Exception:
         return {"has_issue": False, "issue": ""}

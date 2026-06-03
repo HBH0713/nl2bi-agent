@@ -2,6 +2,7 @@ import json
 from src.agents.state import AgentState
 from src.models.router import ModelRouter, ModelTask
 from src.prompts.interpreter import build_interpreter_messages
+from src.utils.json_parser import parse_llm_json
 import structlog
 
 logger = structlog.get_logger("agent.interpreter")
@@ -41,7 +42,7 @@ async def interpreter(state: AgentState, router: ModelRouter) -> dict:
             messages=messages,
             temperature=0.3,
         )
-        result = json.loads(response.content)
+        result = parse_llm_json(response.content)
 
         logger.info("Interpretation complete", row_count=row_count)
 

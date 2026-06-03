@@ -2,6 +2,7 @@ import json
 from src.agents.state import AgentState
 from src.models.router import ModelRouter, ModelTask
 from src.prompts.sql_gen import build_sql_gen_messages
+from src.utils.json_parser import parse_llm_json
 import structlog
 
 logger = structlog.get_logger("agent.sql_generator")
@@ -37,7 +38,8 @@ async def sql_generator(state: AgentState, router: ModelRouter) -> dict:
             messages=prompt_messages,
             temperature=0.1,
         )
-        result = json.loads(response.content)
+        raw = response.content.strip()
+        result = parse_llm_json(raw)
 
         sql = result.get("sql", "")
 

@@ -2,6 +2,7 @@ import json
 from src.agents.state import AgentState
 from src.models.router import ModelRouter, ModelTask
 from src.prompts.intent import build_intent_messages
+from src.utils.json_parser import parse_llm_json
 import structlog
 
 logger = structlog.get_logger("agent.intent")
@@ -26,7 +27,7 @@ async def intent_classifier(state: AgentState, router: ModelRouter) -> dict:
             messages=messages,
             temperature=0.0,
         )
-        result = json.loads(response.content)
+        result = parse_llm_json(response.content)
 
         logger.info(
             "Intent classified",
