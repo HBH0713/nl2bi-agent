@@ -97,7 +97,14 @@ if go_btn and query.strip():
                     df = pd.DataFrame(rows, columns=columns)
                     # 自动将数字字符串转为数值类型
                     for col in df.columns:
-                        df[col] = pd.to_numeric(df[col], errors='ignore')
+                        try:
+                            converted = pd.to_numeric(df[col], errors='coerce')
+                            # 如果大部分值能转成数字，就替换
+                            valid_pct = converted.notna().sum() / max(len(converted), 1)
+                            if valid_pct > 0.5:
+                                df[col] = converted
+                        except Exception:
+                            pass
                     num_cols = df.select_dtypes(include="number").columns.tolist()
                     # 找最佳分类列（跳过 ID 类列名）
                     cat_col = None
@@ -168,11 +175,14 @@ if go_btn and query.strip():
                         stats_cols = st.columns(min(len(num_cols), 4))
                         for i, nc in enumerate(num_cols[:4]):
                             vals = df[nc].dropna()
-                            stats_cols[i].metric(
-                                f"📊 {nc}",
-                                f"{vals.mean():,.1f}",
-                                delta=f"最高 {vals.max():,.1f} | 最低 {vals.min():,.1f}" if len(vals) > 1 else None,
-                            )
+                            if len(vals) > 0 and not vals.isnull().all():
+                                try:
+                                    stats_cols[i].metric(
+                                        f"📊 {nc}",
+                                        f"{float(vals.mean()):,.1f}",
+                                    )
+                                except Exception:
+                                    pass
 
                     # Table
                     st.subheader("📋 查询结果")
