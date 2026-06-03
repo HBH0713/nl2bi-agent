@@ -19,12 +19,14 @@ class QueryResponse(BaseModel):
     rows: List[List[Any]] = Field(default_factory=list, description="查询结果的数据行")
     row_count: int = Field(0, description="结果总行数")
     truncated: bool = Field(False, description="结果是否被截断")
-    interpretation: str = Field(..., description="AI 对数据的中文解读")
+    interpretation: str = Field("", description="AI 对数据的中文解读")
     highlights: List[str] = Field(default_factory=list, description="数据中的关键发现")
     chart_suggestion: dict = Field(default_factory=dict, description="推荐的可视化图表类型")
     follow_up_questions: List[str] = Field(default_factory=list, description="建议的追问方向")
     elapsed_ms: float = Field(0.0, description="查询总耗时（毫秒）")
     error: Optional[str] = Field(None, description="错误信息，成功时为 null")
+    # 报表字段
+    report_data: Optional[List[dict]] = Field(None, description="报表子查询结果列表")
 
 
 class HealthResponse(BaseModel):

@@ -79,6 +79,7 @@ async def query_data(req: QueryRequest):
             follow_up_questions=result.get("follow_up_questions", []),
             elapsed_ms=elapsed,
             error=result.get("query_error"),
+            report_data=result.get("report_data"),
         )
 
         logger.info(

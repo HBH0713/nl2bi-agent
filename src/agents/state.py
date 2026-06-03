@@ -33,3 +33,10 @@ class AgentState(TypedDict):
 
     error_count: int
     recovery_path: str                       # retry | rewrite | fallback | reject
+
+    # Report-specific fields
+    report_title: str
+    report_sub_queries: List[Dict]
+    report_date_range: str
+    report_data: List[Dict]
+    report_elapsed_ms: float

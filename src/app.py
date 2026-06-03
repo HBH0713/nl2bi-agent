@@ -106,21 +106,24 @@ if go_btn and query.strip():
                         except Exception:
                             pass
                     num_cols = df.select_dtypes(include="number").columns.tolist()
-                    # 找最佳分类列（跳过 ID 类列名）
+                    non_num_cols = [c for c in df.columns if c not in num_cols]
+                    # 找最佳分类列：跳过 ID 类、选第一个非数字非ID列
                     cat_col = None
-                    for c in columns:
-                        if c not in num_cols and 'id' not in c.lower():
+                    for c in non_num_cols:
+                        if 'id' not in c.lower():
                             cat_col = c
                             break
-                    if cat_col is None:
-                        cat_col = columns[0] if columns[0] not in num_cols else (columns[1] if len(columns) > 1 else None)
-                    num_val = num_cols[0] if num_cols else (num_cols[1] if len(num_cols) > 1 else None)
-                    # 跳过 ID 类数值列
+                    if cat_col is None and non_num_cols:
+                        cat_col = non_num_cols[0]
+                    # 找最佳数值列：跳过 ID 类
+                    num_val = None
                     for n in num_cols:
                         if 'id' not in n.lower():
                             num_val = n
                             break
-                    n_categories = df[cat_col].nunique() if cat_col else 0
+                    if num_val is None and num_cols:
+                        num_val = num_cols[0]
+                    n_categories = df[cat_col].nunique() if cat_col and cat_col in df.columns else 0
 
                     # ── Auto Chart ──
                     chart_type = data.get("chart_suggestion", {}).get("type", "table")
@@ -188,10 +191,51 @@ if go_btn and query.strip():
                     st.subheader("📋 查询结果")
                     st.dataframe(df, use_container_width=True)
 
+                # ── Report Results ──
+                report_data = data.get("report_data", [])
+                if report_data and len(report_data) > 1:
+                    st.subheader(f"📈 报表结果（{len(report_data)} 个指标）")
+                    rcols = st.columns(min(len(report_data), 3))
+                    for i, rd in enumerate(report_data):
+                        with rcols[i % 3]:
+                            q = rd.get("question", f"指标{i+1}")
+                            n = rd.get("row_count", 0)
+                            err = rd.get("error", "")
+                            rr = rd.get("rows", [])
+                            rc = rd.get("columns", [])
+
+                            if err:
+                                st.warning(f"**{q}**\n\n{err}")
+                                continue
+                            if n == 0:
+                                st.info(f"**{q}**\n\n暂无匹配数据")
+                                continue
+
+                            with st.container(border=True):
+                                st.caption(q)
+                                st.metric("结果", f"{n} 条")
+                                if rr and rc and len(rc) >= 2:
+                                    try:
+                                        pdf = pd.DataFrame(rr, columns=rc)
+                                        for c in pdf.columns:
+                                            pdf[c] = pd.to_numeric(pdf[c], errors='coerce')
+                                        ncols = pdf.select_dtypes(include='number').columns.tolist()
+                                        ccols = [c for c in pdf.columns if c not in ncols and 'id' not in c.lower()]
+                                        if ncols and ccols:
+                                            fig = px.bar(pdf, x=ccols[0], y=ncols[0],
+                                                         height=180, color_discrete_sequence=["#1f77b4"])
+                                            fig.update_layout(margin=dict(l=0, r=0, t=0, b=0),
+                                                              xaxis_tickangle=-45, font_size=10)
+                                            st.plotly_chart(fig, use_container_width=True)
+                                        else:
+                                            st.dataframe(pdf, use_container_width=True, hide_index=True)
+                                    except Exception:
+                                        st.dataframe(pd.DataFrame(rr, columns=rc), use_container_width=True, hide_index=True)
+
                 # ── Interpretation ──
                 interp = data.get("interpretation", "")
                 if interp:
-                    st.info(f"**📊 AI 解读：** {interp}")
+                    st.markdown(interp.replace("## ", "### "))
 
                 # ── Follow-ups ──
                 fuq = data.get("follow_up_questions", [])

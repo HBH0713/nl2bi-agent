@@ -8,6 +8,8 @@ from src.agents.schema_rag import schema_rag_retriever
 from src.agents.sql_generator import sql_generator
 from src.agents.sql_validator import sql_validator
 from src.agents.interpreter import interpreter
+from src.agents.report_planner import report_planner
+from src.agents.report_runner import report_runner
 from src.db.executor import execute_query
 from src.db.connection import get_session
 from src.models.router import ModelRouter
@@ -52,13 +54,6 @@ async def chitchat_handler(state: AgentState, router: ModelRouter) -> dict:
         "highlights": [],
         "chart_suggestion": {"type": "none", "reason": ""},
         "follow_up_questions": [],
-    }
-
-
-async def report_handler(state: AgentState) -> dict:
-    return {
-        "intent": "data_query",
-        "clarify_question": "报表功能开发中，我先帮您查询相关数据。请描述您需要的数据维度。",
     }
 
 
@@ -123,7 +118,8 @@ def build_agent_graph(router: ModelRouter) -> StateGraph:
     # 节点 — 必须是 async 函数，LangGraph 会自动 await
     async def _intent_classifier(s): return await intent_classifier(s, router)
     async def _chitchat_handler(s): return await chitchat_handler(s, router)
-    async def _report_handler(s): return await report_handler(s)
+    async def _report_planner(s): return await report_planner(s, router)
+    async def _report_runner(s): return await report_runner(s, router)
     async def _schema_rag(s): return await schema_rag_retriever(s)
     async def _sql_generator(s): return await sql_generator(s, router)
     async def _sql_validator(s): return await sql_validator(s, router)
@@ -133,7 +129,8 @@ def build_agent_graph(router: ModelRouter) -> StateGraph:
 
     workflow.add_node("intent_classifier", _intent_classifier)
     workflow.add_node("chitchat_handler", _chitchat_handler)
-    workflow.add_node("report_handler", _report_handler)
+    workflow.add_node("report_planner", _report_planner)
+    workflow.add_node("report_runner", _report_runner)
     workflow.add_node("schema_rag", _schema_rag)
     workflow.add_node("sql_generator", _sql_generator)
     workflow.add_node("sql_validator", _sql_validator)
@@ -150,12 +147,13 @@ def build_agent_graph(router: ModelRouter) -> StateGraph:
         {
             "chitchat_handler": "chitchat_handler",
             "schema_rag": "schema_rag",
-            "report_handler": "report_handler",
+            "report_handler": "report_planner",
         },
     )
 
     workflow.add_edge("chitchat_handler", END)
-    workflow.add_edge("report_handler", "schema_rag")
+    workflow.add_edge("report_planner", "report_runner")
+    workflow.add_edge("report_runner", END)
     workflow.add_edge("schema_rag", "sql_generator")
     workflow.add_edge("sql_generator", "sql_validator")
 
