@@ -3,16 +3,25 @@ FROM python:3.11-slim
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
+    build-essential curl \
     && rm -rf /var/lib/apt/lists/*
 
+# 安装依赖
 COPY pyproject.toml .
-RUN pip install --no-cache-dir .
+RUN pip install --no-cache-dir -e ".[dev]" openpyxl streamlit plotly pandas
 
+# 复制源码
 COPY src/ ./src/
 COPY data/ ./data/
 COPY scripts/ ./scripts/
 
-EXPOSE 8000
+# 预下载 BGE 模型（构建时缓存）
+RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('BAAI/bge-small-zh-v1.5')" || true
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+EXPOSE 8000 8501
+
+# 启动脚本
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]
