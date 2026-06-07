@@ -13,7 +13,7 @@ class Embedder:
     def __init__(self, model_name: str = MODEL_NAME):
         import os
         os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
-        self._model = SentenceTransformer(model_name, local_files_only=False)
+        self._model = SentenceTransformer(model_name, local_files_only=True)
         self._dimension = self._model.get_sentence_embedding_dimension()
         logger.info("Embedder loaded", model=model_name, dimension=self._dimension)
 

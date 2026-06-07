@@ -4,8 +4,22 @@ __pycache__/
 .venv/
 venv/
 chroma_data/
+chroma_data_vanna/
 *.egg-info/
 dist/
 .pytest_cache/
 .coverage
 htmlcov/
+# Docker
+pgdata/
+ollama_data/
+# IDE
+.idea/
+.vscode/
+*.swp
+# OS
+.DS_Store
+Thumbs.db
+# temp
+/tmp/
+*.log

@@ -1,62 +1,77 @@
-version: '3.8'
+# ============================================================
+# NL2BI Agent — 完整 Docker 部署
+# 启动: docker compose up -d
+# 停止: docker compose down
+# ============================================================
+# 中国用户注意：
+#   启动前需配好 Docker 代理（Settings → Resources → Proxies）
+#   或者用轻量版: docker compose -f docker-compose.lite.yml up -d
+# ============================================================
 
 services:
+  # ── PostgreSQL 16 + pgvector ──
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: bi_postgres
+    container_name: nl2bi-postgres
     environment:
-      POSTGRES_DB: bi_demo
-      POSTGRES_USER: bi_agent
+      POSTGRES_DB: ${PG_DATABASE:-bi_demo}
+      POSTGRES_USER: ${PG_USER:-bi_agent}
       POSTGRES_PASSWORD: ${PG_PASSWORD:-changeme}
     ports:
-      - "5432:5432"
+      - "${PG_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./data/sample_db.sql:/docker-entrypoint-initdb.d/01_init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U bi_agent -d bi_demo"]
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-bi_agent} -d ${PG_DATABASE:-bi_demo}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
+  # ── Ollama 本地 LLM ──
   ollama:
     image: ollama/ollama:latest
-    container_name: bi_ollama
+    container_name: nl2bi-ollama
     ports:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
+    restart: unless-stopped
+    # 首次启动后需手动拉模型: docker exec nl2bi-ollama ollama pull qwen2.5:7b
 
+  # ── ChromaDB 向量数据库 ──
   chromadb:
     image: chromadb/chroma:latest
-    container_name: bi_chromadb
+    container_name: nl2bi-chromadb
     ports:
       - "8001:8000"
     volumes:
       - chroma_data:/chroma/chroma
+    restart: unless-stopped
 
-  api:
+  # ── NL2BI Agent API + Streamlit UI ──
+  app:
     build: .
-    container_name: bi_api
+    container_name: nl2bi-app
     ports:
       - "8000:8000"
+      - "8501:8501"
     environment:
       - PG_HOST=postgres
       - PG_PORT=5432
-      - PG_DATABASE=bi_demo
-      - PG_USER=bi_agent
+      - PG_DATABASE=${PG_DATABASE:-bi_demo}
+      - PG_USER=${PG_USER:-bi_agent}
       - PG_PASSWORD=${PG_PASSWORD:-changeme}
       - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:7b}
       - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - DEEPSEEK_MODEL=${DEEPSEEK_MODEL:-deepseek-chat}
+      - DEEPSEEK_BASE_URL=${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
       - CHROMA_PERSIST_DIR=/app/chroma_data
-      - LOG_FORMAT=json
+      - HF_ENDPOINT=${HF_ENDPOINT:-https://hf-mirror.com}
+      - LOG_FORMAT=${LOG_FORMAT:-json}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,6 +81,7 @@ services:
         condition: service_started
     volumes:
       - chroma_data:/app/chroma_data
+    restart: unless-stopped
 
 volumes:
   pgdata:

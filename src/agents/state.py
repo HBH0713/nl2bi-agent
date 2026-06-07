@@ -34,6 +34,14 @@ class AgentState(TypedDict):
     error_count: int
     recovery_path: str                       # retry | rewrite | fallback | reject
 
+    # History matching
+    history_matched: bool                    # 是否命中历史缓存
+    history_score: float                     # 匹配相似度
+    history_original_query: str              # 匹配到的历史问题
+
+    # SQL correction loop
+    sql_correction_attempts: int             # 已尝试的修正次数
+
     # Report-specific fields
     report_title: str
     report_sub_queries: List[Dict]

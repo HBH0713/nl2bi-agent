@@ -32,6 +32,10 @@ class Settings(BaseSettings):
     # ChromaDB
     chroma_persist_dir: str = "./chroma_data"
 
+    # History matching
+    history_similarity_threshold: float = 0.85
+    history_enabled: bool = True
+
     # Safety
     max_query_timeout_s: int = 30
     max_return_rows: int = 10000
