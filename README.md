@@ -1,6 +1,7 @@
 # 📊 NL2BI Agent — 自然语言数据分析 Agent
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
+[![CI](https://github.com/HBH0713/nl2bi-agent/actions/workflows/test.yml/badge.svg)](https://github.com/HBH0713/nl2bi-agent/actions)
 [![LangGraph](https://img.shields.io/badge/Agent-LangGraph-orange)](https://langchain.com/langgraph)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue)](https://docs.docker.com/compose/)
