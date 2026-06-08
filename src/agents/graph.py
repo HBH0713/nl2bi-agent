@@ -116,10 +116,10 @@ async def history_matcher_node(state: AgentState) -> dict:
             "history_original_query": "",
         }
 
-    # 多轮对话中跳过缓存——追问需要基于上轮结果重新生成SQL
-    messages = state.get("messages", [])
-    if len(messages) >= 2:
-        # 有对话历史说明是多轮对话，不走缓存
+    # 多轮对话中跳过缓存——如果状态中已有 SQL 说明是追问
+    prev_sql = state.get("generated_sql", "")
+    if prev_sql:
+        logger.info("history_skip_multiturn", prev_sql=prev_sql[:80])
         return {
             "history_matched": False,
             "history_score": 0.0,

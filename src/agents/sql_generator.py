@@ -48,7 +48,10 @@ async def sql_generator(state: AgentState, router: ModelRouter) -> dict:
     prev_sql = state.get("generated_sql", "")
     prev_rows = state.get("query_rows", [])
     prev_columns = state.get("query_columns", [])
-    if prev_sql:
+    if prev_sql and len(query) < 15:
+        # 追问通常很短（<15字），强制告知必须基于上一轮修改
+        history_parts.append(f"【重要】这是追问，你必须在下面这条 SQL 基础上修改，不要从零生成：\n{prev_sql}")
+    elif prev_sql:
         history_parts.append(f"上一轮 SQL: {prev_sql}")
     if prev_rows and prev_columns:
         sample = prev_rows[:3]
