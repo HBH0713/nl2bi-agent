@@ -51,6 +51,12 @@ graph TD
     style J fill:#f59e0b,color:#fff
 ```
 
+## 📸 效果展示
+
+| 图表查询 | SQL 解读 | 数据概览 |
+|------|------|------|
+| ![图表](docs/screenshots/chart.png) | ![SQL](docs/screenshots/sql.png) | ![概览](docs/screenshots/dashboard.png) |
+
 ## 🚀 快速开始
 
 ### 前置要求
