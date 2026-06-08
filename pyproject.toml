@@ -39,3 +39,7 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+markers = [
+    "integration: 集成测试，需要本地服务运行中",
+    "slow: 慢速测试，需调用 LLM API",
+]

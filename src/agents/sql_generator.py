@@ -37,13 +37,23 @@ async def sql_generator(state: AgentState, router: ModelRouter) -> dict:
                 "sql_reject_reason": "缺少 Schema 上下文"}
 
     messages = state.get("messages", [])
-    history = ""
+    history_parts = []
     if messages:
         recent = [m for m in messages[-6:] if hasattr(m, "content")]
-        history = "\n".join(
+        history_parts = [
             f"{'用户' if m.type == 'human' else '助手'}: {m.content}"
             for m in recent if m.content
-        )
+        ]
+    # 附加上一轮查询的 SQL 和结果摘要，帮助模型理解追问上下文
+    prev_sql = state.get("generated_sql", "")
+    prev_rows = state.get("query_rows", [])
+    prev_columns = state.get("query_columns", [])
+    if prev_sql:
+        history_parts.append(f"上一轮 SQL: {prev_sql}")
+    if prev_rows and prev_columns:
+        sample = prev_rows[:3]
+        history_parts.append(f"上一轮结果(共{len(prev_rows)}行, 列:{prev_columns}): {sample}")
+    history = "\n".join(history_parts)
 
     try:
         # 第一次尝试

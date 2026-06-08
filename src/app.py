@@ -302,6 +302,12 @@ with st.container(border=True):
     with col2:
         go_btn = st.button("🚀 查 询", use_container_width=True, type="primary")
 
+# 追问按钮点击后自动填入输入框
+if "_next_query" in st.session_state and st.session_state["_next_query"]:
+    query = st.session_state["_next_query"]
+    st.session_state["_next_query"] = ""
+    go_btn = True
+
 if go_btn and query.strip():
     with st.spinner("🤔 AI 正在分析中..."):
         data = api_post("/api/query",
@@ -517,15 +523,13 @@ if go_btn and query.strip():
                 # ── Follow-ups ──
                 fuq = data.get("follow_up_questions", [])
                 if fuq:
-                    st.markdown("##### 💭 继续追问")
+                    st.markdown("##### 💭 继续追问（点击自动填入）")
                     cols = st.columns(min(len(fuq), 3))
                     for i, q in enumerate(fuq[:6]):
                         with cols[i % 3]:
-                            st.markdown(f"""
-                            <div class="card" style="padding:0.6rem 1rem;cursor:pointer;font-size:0.9rem;">
-                                {q}
-                            </div>
-                            """, unsafe_allow_html=True)
+                            if st.button(q, key=f"fuq_{i}_{time.time()}", use_container_width=True):
+                                st.session_state["_next_query"] = q
+                                st.rerun()
 
                 # ── Highlights ──
                 highlights = data.get("highlights", [])
