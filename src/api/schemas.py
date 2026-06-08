@@ -5,6 +5,7 @@ from typing import Optional, List, Any
 class QueryRequest(BaseModel):
     query: str = Field(..., description="用自然语言描述的数据问题", min_length=1, max_length=2000)
     session_id: Optional[str] = Field(None, description="会话标识，用于多轮追问，不传则自动创建新会话")
+    previous_sql: Optional[str] = Field(None, description="上一轮查询的SQL，用于多轮追问上下文")
 
 
 class QueryResponse(BaseModel):

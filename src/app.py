@@ -304,9 +304,15 @@ with st.container(border=True):
 
 if go_btn and query.strip():
     with st.spinner("🤔 AI 正在分析中..."):
-        data = api_post("/api/query",
-            {"query": query.strip(), "session_id": st.session_state.session_id},
-            timeout=120)
+        # 多轮对话：传递上一轮 SQL 作为上下文
+        prev_sql = st.session_state.get("_last_sql", "")
+        req_body = {
+            "query": query.strip(),
+            "session_id": st.session_state.session_id,
+        }
+        if prev_sql and len(st.session_state.get("history", [])) > 0:
+            req_body["previous_sql"] = prev_sql
+        data = api_post("/api/query", req_body, timeout=120)
         if data is None:
             st.error("❌ 无法连接到 API 服务，请确认已启动: uvicorn src.main:app --port 8000")
         elif "detail" in data:
@@ -541,6 +547,8 @@ if go_btn and query.strip():
                     "elapsed_ms": data.get("elapsed_ms", 0),
                     "row_count": data.get("row_count", 0),
                 })
+                # 保存上一轮 SQL 供多轮对话使用
+                st.session_state["_last_sql"] = sql
 
 # (已移除 httpx 异常处理，改用 urllib)
 

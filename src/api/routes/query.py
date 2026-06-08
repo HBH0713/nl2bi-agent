@@ -56,10 +56,12 @@ async def query_data(req: QueryRequest):
     config = {"configurable": {"thread_id": session_id}}
 
     try:
-        result = await graph.ainvoke(
-            {"user_query": req.query, "error_count": 0},
-            config=config,
-        )
+        initial_state = {"user_query": req.query, "error_count": 0}
+        if req.previous_sql:
+            initial_state["generated_sql"] = req.previous_sql
+            logger.info("multi_turn_context", prev=req.previous_sql[:80])
+
+        result = await graph.ainvoke(initial_state, config=config)
 
         # 数据脱敏
         columns = result.get("query_columns", [])
