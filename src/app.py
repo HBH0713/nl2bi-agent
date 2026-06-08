@@ -303,10 +303,15 @@ with st.container(border=True):
         go_btn = st.button("🚀 查 询", use_container_width=True, type="primary")
 
 # 追问按钮点击后自动填入输入框
-if "_next_query" in st.session_state and st.session_state["_next_query"]:
-    query = st.session_state["_next_query"]
+if "_next_query" not in st.session_state:
     st.session_state["_next_query"] = ""
-    go_btn = True
+if "query_input" not in st.session_state:
+    st.session_state["query_input"] = ""
+
+if st.session_state["_next_query"]:
+    st.session_state["query_input"] = st.session_state["_next_query"]
+    st.session_state["_next_query"] = ""
+    # 不自动提交，让用户确认后点查询
 
 if go_btn and query.strip():
     with st.spinner("🤔 AI 正在分析中..."):
