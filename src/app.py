@@ -302,17 +302,6 @@ with st.container(border=True):
     with col2:
         go_btn = st.button("🚀 查 询", use_container_width=True, type="primary")
 
-# 追问按钮点击后自动填入输入框
-if "_next_query" not in st.session_state:
-    st.session_state["_next_query"] = ""
-if "query_input" not in st.session_state:
-    st.session_state["query_input"] = ""
-
-if st.session_state["_next_query"]:
-    st.session_state["query_input"] = st.session_state["_next_query"]
-    st.session_state["_next_query"] = ""
-    # 不自动提交，让用户确认后点查询
-
 if go_btn and query.strip():
     with st.spinner("🤔 AI 正在分析中..."):
         data = api_post("/api/query",
@@ -529,12 +518,13 @@ if go_btn and query.strip():
                 fuq = data.get("follow_up_questions", [])
                 if fuq:
                     st.markdown("##### 💭 继续追问（点击自动填入）")
+                    def _set_query(val):
+                        st.session_state["query_input"] = val
                     cols = st.columns(min(len(fuq), 3))
                     for i, q in enumerate(fuq[:6]):
                         with cols[i % 3]:
-                            if st.button(q, key=f"fuq_{i}_{time.time()}", use_container_width=True):
-                                st.session_state["_next_query"] = q
-                                st.rerun()
+                            st.button(q, key=f"fuq_{hash(q)}", use_container_width=True,
+                                      on_click=_set_query, args=(q,))
 
                 # ── Highlights ──
                 highlights = data.get("highlights", [])

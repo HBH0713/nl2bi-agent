@@ -2,8 +2,7 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# 用国内 PyPI 镜像，不需要代理
-RUN pip install --no-cache-dir -i https://pypi.tuna.tsinghua.edu.cn/simple \
+RUN pip install --no-cache-dir \
     fastapi uvicorn[standard] \
     langgraph langchain langchain-openai langchain-ollama \
     sqlalchemy[asyncio] asyncpg \
