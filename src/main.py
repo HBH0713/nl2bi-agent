@@ -5,6 +5,7 @@ from src.api.middleware import RequestLoggingMiddleware
 from src.api.routes.query import router as query_router
 from src.api.routes.health import router as health_router
 from src.api.routes.auth import router as auth_router
+from src.api.routes.pdf import router as pdf_router
 from src.db.connection import init_db, close_db
 from src.utils.logger import setup_logging
 import structlog
@@ -47,6 +48,7 @@ app.add_middleware(
 app.include_router(query_router)
 app.include_router(health_router)
 app.include_router(auth_router)
+app.include_router(pdf_router)
 
 
 @app.get("/", tags=["系统信息"])

@@ -23,3 +23,5 @@ Thumbs.db
 # temp
 /tmp/
 *.log
+
+/src/generated/prisma
