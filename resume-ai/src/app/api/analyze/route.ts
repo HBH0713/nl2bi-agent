@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createServerSupabase } from "../../../lib/supabase/server";
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY || "sk-placeholder",
@@ -92,7 +92,7 @@ ${pdfText}`;
     } catch (e) { console.error("Save failed:", e); }
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Analysis error:", error);
     return NextResponse.json(
       { error: error.message || "分析失败，请重试" },

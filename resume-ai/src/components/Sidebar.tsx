@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
+import { cn } from "../lib/utils";
+import { createClient } from "../lib/supabase/client";
 import { FileText, Sparkles, MessageSquare, LayoutDashboard, History, LogOut } from "lucide-react";
 
 const links = [

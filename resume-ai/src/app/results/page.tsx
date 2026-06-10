@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Target, AlertCircle, Lightbulb, MessageSquare, Briefcase, TrendingUp } from "lucide-react";
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface AnalysisResult {
   text?: string; score?: number; strengths?: string[]; weaknesses?: string[];
   suggestions?: { section: string; original: string; improved: string; reason: string }[];
@@ -12,6 +13,7 @@ interface AnalysisResult {
   error?: string;
 }
 
+/* eslint-disable @typescript-eslint/no-explicit-any */
 interface MatchResult {
   matchScore?: number; matchedKeywords?: string[]; missingKeywords?: string[];
   strengthAreas?: { requirement: string; evidence: string; score: number }[];
@@ -27,7 +29,10 @@ export default function ResultsPage() {
 
   useEffect(() => {
     const raw = sessionStorage.getItem("analysisResult");
-    if (raw) setResult(JSON.parse(raw));
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      setTimeout(() => setResult(parsed), 0);
+    }
   }, []);
 
   const handleMatch = async () => {

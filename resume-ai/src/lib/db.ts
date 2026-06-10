@@ -1,9 +1,9 @@
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createServerSupabase } from "./supabase/server";
 
 export async function saveAnalysis(userId: string, data: {
   fileName: string; score: number; strengths: string[];
   weaknesses: string[]; keywords: string[];
-  suggestions: any[]; interviewQuestions: any[];
+  suggestions: Record<string, unknown>[]; interviewQuestions: Record<string, unknown>[];
 }) {
   const supabase = await createServerSupabase();
   const { error } = await supabase.from("analyses").insert({

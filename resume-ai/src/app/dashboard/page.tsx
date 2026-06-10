@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
 import { FileText, Target, MessageSquare, TrendingUp } from "lucide-react";
 
 export default function DashboardPage() {

@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { History, TrendingUp, Calendar } from "lucide-react";
-import { getAnalyses } from "@/lib/db";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { getAnalyses } from "../../lib/db";
+import { createServerSupabase } from "../../lib/supabase/server";
 
 export default async function HistoryPage() {
   const supabase = await createServerSupabase();

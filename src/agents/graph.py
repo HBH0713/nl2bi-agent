@@ -29,8 +29,14 @@ def route_after_intent(state: AgentState) -> Literal["chitchat_handler", "histor
         return "chitchat_handler"
     elif intent == "report_req":
         return "report_handler"
-    else:
-        return "history_matcher"
+    # 检测复杂查询 → 自动触发多 Agent 并行
+    query = state.get("user_query", "")
+    complex_keywords = ["对比", "分别", "以及", "和...的", "各自", "不同", "各个", "每月", "趋势"]
+    is_complex = any(kw in query for kw in complex_keywords)
+    if is_complex and intent in ("data_query", "ambiguous"):
+        logger.info("auto_parallel", query=query[:50])
+        return "report_handler"
+    return "history_matcher"
 
 
 def route_after_history(state: AgentState) -> Literal["executor", "schema_rag"]:

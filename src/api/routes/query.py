@@ -26,8 +26,8 @@ NODE_LABELS = {
     "store_history": "💾 保存记录",
     "reject_handler": "⚠️ 处理错误",
     "chitchat_handler": "💬",
-    "report_planner": "📋 规划报表",
-    "report_runner": "📊 生成报表",
+    "report_planner": "🤖 多Agent规划 — 拆解复杂问题",
+    "report_runner": "⚡ 多Agent并行 — 同时执行子查询",
 }
 
 logger = structlog.get_logger("api.query")
