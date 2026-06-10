@@ -1,6 +1,8 @@
 import time
 import uuid
+import json
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from src.api.schemas import QueryRequest, QueryResponse
 from src.agents.graph import build_agent_graph
 from src.models.router import ModelRouter
@@ -11,6 +13,22 @@ from src.db.connection import init_db
 from src.utils.data_masker import is_sensitive_column, mask_dataframe
 import structlog
 import pandas as pd
+
+NODE_LABELS = {
+    "intent_classifier": "🎯 分析意图",
+    "history_matcher": "🧠 查找缓存",
+    "schema_rag": "🔍 检索表结构",
+    "sql_generator": "📝 AI 生成 SQL",
+    "sql_validator": "✅ 校验 SQL",
+    "sql_corrector": "🔧 自动修正 SQL",
+    "executor": "⚡ 执行查询",
+    "interpreter": "💡 AI 解读结果",
+    "store_history": "💾 保存记录",
+    "reject_handler": "⚠️ 处理错误",
+    "chitchat_handler": "💬",
+    "report_planner": "📋 规划报表",
+    "report_runner": "📊 生成报表",
+}
 
 logger = structlog.get_logger("api.query")
 
@@ -111,3 +129,48 @@ async def query_data(req: QueryRequest):
     except Exception as e:
         logger.error("Query failed", request_id=request_id, error=str(e))
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/query/stream", summary="流式自然语言查询（SSE）")
+async def query_data_stream(req: QueryRequest):
+    """SSE 流式返回 Agent 每个节点的执行状态，前端实时显示进度"""
+    request_id = str(uuid.uuid4())[:8]
+    session_id = req.session_id or f"sess_{uuid.uuid4().hex[:12]}"
+    graph = get_agent()
+    config = {"configurable": {"thread_id": session_id}}
+
+    async def event_stream():
+        initial_state = {"user_query": req.query, "error_count": 0}
+        if req.previous_sql:
+            initial_state["generated_sql"] = req.previous_sql
+
+        last_node = ""
+        try:
+            async for event in graph.astream(initial_state, config=config):
+                for node_name, node_output in event.items():
+                    if node_name in NODE_LABELS:
+                        label = NODE_LABELS[node_name]
+                        # 为关键节点附加详情
+                        detail = ""
+                        if node_name == "history_matcher" and node_output.get("history_matched"):
+                            detail = f" (命中缓存, 相似度 {node_output.get('history_score', 0):.0%})"
+                        elif node_name == "sql_generator":
+                            sql = node_output.get("generated_sql", "")
+                            if sql:
+                                detail = f"\n```sql\n{sql[:200]}\n```"
+                        elif node_name == "executor":
+                            rows = node_output.get("query_row_count", 0)
+                            err = node_output.get("query_error", "")
+                            detail = f" ({rows} 行)" if rows else f" (失败: {err[:60]})" if err else ""
+                        elif node_name == "reject_handler":
+                            path = node_output.get("recovery_path", "")
+                            detail = f" ({'自动修正中...' if path == 'correct' else '已放弃'})"
+
+                        yield f"data: {json.dumps({'node': node_name, 'label': label, 'detail': detail}, ensure_ascii=False)}\n\n"
+
+            yield f"data: {json.dumps({'node': 'done', 'label': '✅ 完成'}, ensure_ascii=False)}\n\n"
+
+        except Exception as e:
+            yield f"data: {json.dumps({'node': 'error', 'label': f'❌ {str(e)[:100]}'}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")

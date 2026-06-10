@@ -304,15 +304,44 @@ with st.container(border=True):
 
 if go_btn and query.strip():
     with st.spinner("🤔 AI 正在分析中..."):
-        # 多轮对话：传递上一轮 SQL 作为上下文
+        # 流式 SSE：实时显示进度
+        progress_placeholder = st.empty()
+        import urllib.request as _ur
         prev_sql = st.session_state.get("_last_sql", "")
-        req_body = {
+        stream_body = json_mod.dumps({
             "query": query.strip(),
             "session_id": st.session_state.session_id,
-        }
-        if prev_sql and len(st.session_state.get("history", [])) > 0:
-            req_body["previous_sql"] = prev_sql
-        data = api_post("/api/query", req_body, timeout=120)
+            **({"previous_sql": prev_sql} if prev_sql and len(st.session_state.get("history", [])) > 0 else {}),
+        }).encode("utf-8")
+        stream_req = _ur.Request("http://127.0.0.1:8000/api/query/stream",
+            data=stream_body, headers={"Content-Type": "application/json"})
+        progress_lines = []
+        data = None
+        try:
+            with _ur.urlopen(stream_req, timeout=120) as resp:
+                for line in resp:
+                    line = line.decode("utf-8").strip()
+                    if line.startswith("data: "):
+                        evt = json_mod.loads(line[6:])
+                        node = evt.get("node", "")
+                        label = evt.get("label", "")
+                        detail = evt.get("detail", "")
+                        if node == "done":
+                            progress_lines.append(f"✅ 完成")
+                        elif node == "error":
+                            progress_lines.append(f"❌ {label}")
+                        else:
+                            progress_lines.append(f"{label}{' ' + detail if detail else ''}")
+                        progress_placeholder.markdown("\n".join(f"`{p}`" for p in progress_lines[-8:]))
+        except Exception:
+            pass
+        # 仍然调用标准 API 获取完整结果
+        data = api_post("/api/query", {
+            "query": query.strip(),
+            "session_id": st.session_state.session_id,
+            **({"previous_sql": prev_sql} if prev_sql and len(st.session_state.get("history", [])) > 0 else {}),
+        }, timeout=120)
+        progress_placeholder.empty()
         if data is None:
             st.error("❌ 无法连接到 API 服务，请确认已启动: uvicorn src.main:app --port 8000")
         elif "detail" in data:
