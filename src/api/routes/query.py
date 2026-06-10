@@ -11,6 +11,7 @@ from src.models.ollama import OllamaClient
 from src.models.openai_compat import OpenAICompatClient
 from src.db.connection import init_db
 from src.utils.data_masker import is_sensitive_column, mask_dataframe
+from src.utils.metrics import log_metrics, get_metrics_summary
 import structlog
 import pandas as pd
 
@@ -124,6 +125,20 @@ async def query_data(req: QueryRequest):
             elapsed_ms=elapsed,
         )
 
+        # 记录评测指标
+        import asyncio as _asyncio
+        _asyncio.create_task(log_metrics(
+            request_id=request_id, session_id=session_id,
+            query=req.query, intent=response.intent,
+            sql=response.generated_sql,
+            success=not bool(response.error),
+            row_count=response.row_count,
+            elapsed_ms=elapsed,
+            cache_hit=result.get("history_matched", False),
+            correction_attempts=result.get("sql_correction_attempts", 0),
+            error=response.error or "",
+        ))
+
         return response
 
     except Exception as e:
@@ -174,3 +189,12 @@ async def query_data_stream(req: QueryRequest):
             yield f"data: {json.dumps({'node': 'error', 'label': f'❌ {str(e)[:100]}'}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+
+@router.get("/metrics", summary="查询评测指标")
+async def get_metrics():
+    """返回查询评测数据：成功率、延迟分布、意图分布、近期查询"""
+    try:
+        return await get_metrics_summary()
+    except Exception as e:
+        return {"error": str(e), "total_queries": 0}

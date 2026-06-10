@@ -257,6 +257,19 @@ with st.sidebar:
             if h.get('sql'):
                 st.code(h['sql'][:120], language="sql")
 
+    # 评测指标
+    st.markdown("#### 📊 评测指标")
+    try:
+        m = api_get("/api/metrics")
+        if m and not m.get("error"):
+            mc1, mc2 = st.columns(2)
+            mc1.metric("总查询", str(m.get("total_queries", 0)))
+            mc1.metric("成功率", f"{m.get('success_rate', 0)}%")
+            mc2.metric("平均耗时", f"{m.get('avg_response_ms', 0):.0f}ms")
+            mc2.metric("缓存命中", f"{m.get('cache_hit_rate', 0)}%")
+    except Exception:
+        pass
+
     if history_count > 0:
         c1, c2 = st.columns(2)
         if c1.button("🔄 清空", use_container_width=True):
