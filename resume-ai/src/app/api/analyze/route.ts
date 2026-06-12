@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import pdfParse from "pdf-parse";
 import { createServerSupabase } from "../../../lib/supabase/server";
 
 const client = new OpenAI({
@@ -16,23 +17,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "请上传 PDF 文件" }, { status: 400 });
     }
 
-    // Call Python FastAPI for PDF text extraction (pdfplumber handles Chinese well)
+    // Extract PDF text using pdf-parse (works on Vercel, no Python dependency)
     let pdfText = "";
     try {
-      const pythonForm = new FormData();
-      pythonForm.append("file", file);
-      const pyRes = await fetch("http://127.0.0.1:8000/api/extract-pdf", {
-        method: "POST",
-        body: pythonForm,
-      });
-      if (!pyRes.ok) {
-        const pyErr = await pyRes.json();
-        return NextResponse.json({ error: pyErr.detail || "PDF 解析失败" }, { status: 400 });
-      }
-      const pyData = await pyRes.json();
-      pdfText = pyData.text.slice(0, 5000);
+      const arrayBuf = await file.arrayBuffer();
+      const pdfData = await pdfParse(Buffer.from(arrayBuf));
+      pdfText = (pdfData.text || "").slice(0, 5000);
     } catch (e: any) {
-      return NextResponse.json({ error: `Python 服务连接失败，请确认 API 已启动` }, { status: 500 });
+      return NextResponse.json({ error: `PDF 解析失败: ${e.message}` }, { status: 500 });
     }
 
     if (!pdfText.trim()) {
