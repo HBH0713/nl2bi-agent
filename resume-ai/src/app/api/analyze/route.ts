@@ -89,11 +89,12 @@ ${pdfText}`;
     analysisCache.set(contentHash, result);
 
     // Save to DB if user is logged in
+    let saved = false;
     try {
       const supabase = await createServerSupabase();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from("analyses").insert({
+        const { error: dbError } = await supabase.from("analyses").insert({
           user_id: user.id,
           file_name: file.name,
           score: analysis.score || 0,
@@ -103,10 +104,17 @@ ${pdfText}`;
           suggestions: analysis.suggestions || [],
           interview_questions: analysis.interviewQuestions || [],
         });
+        if (dbError) {
+          console.error("DB insert error:", dbError);
+        } else {
+          saved = true;
+        }
       }
-    } catch (e) { console.error("Save failed:", e); }
+    } catch (e) {
+      console.error("Save failed:", e);
+    }
 
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, saved });
   } catch (error: unknown) {
     console.error("Analysis error:", error);
     return NextResponse.json(
