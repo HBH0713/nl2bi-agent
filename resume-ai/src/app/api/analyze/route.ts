@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
-import pdfParse from "pdf-parse";
+import { PdfReader } from "pdfreader";
+import { createHash } from "crypto";
 import { createServerSupabase } from "../../../lib/supabase/server";
 
 const client = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY || "sk-placeholder",
   baseURL: process.env.DEEPSEEK_BASE_URL || "https://api.deepseek.com",
 });
+
+// Content-hash cache: same resume → same result, no repeated API calls
+const analysisCache = new Map<string, any>();
 
 export async function POST(req: NextRequest) {
   try {
@@ -17,18 +21,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "请上传 PDF 文件" }, { status: 400 });
     }
 
-    // Extract PDF text using pdf-parse (works on Vercel, no Python dependency)
+    // Extract PDF text using pdfreader (pure JS, no worker, works on Vercel)
     let pdfText = "";
     try {
       const arrayBuf = await file.arrayBuffer();
-      const pdfData = await pdfParse(Buffer.from(arrayBuf));
-      pdfText = (pdfData.text || "").slice(0, 5000);
+      const buffer = Buffer.from(arrayBuf);
+      pdfText = await new Promise<string>((resolve, reject) => {
+        const lines: string[] = [];
+        new PdfReader().parseBuffer(buffer, (err: any, item: any) => {
+          if (err) { reject(err); return; }
+          if (!item) { resolve(lines.join(" ")); return; }
+          if (item.text) lines.push(item.text);
+        });
+      });
+      pdfText = pdfText.slice(0, 5000);
     } catch (e: any) {
       return NextResponse.json({ error: `PDF 解析失败: ${e.message}` }, { status: 500 });
     }
 
     if (!pdfText.trim()) {
       return NextResponse.json({ error: "PDF 内容为空" }, { status: 400 });
+    }
+
+    // Content-hash cache: skip API call if same resume text was already analyzed
+    const contentHash = createHash("sha256").update(pdfText).digest("hex");
+    if (analysisCache.has(contentHash)) {
+      const cached = analysisCache.get(contentHash);
+      return NextResponse.json({ ...cached, cached: true });
     }
 
     // AI Analysis
@@ -56,7 +75,8 @@ ${pdfText}`;
       model: process.env.DEEPSEEK_MODEL || "deepseek-chat",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" },
-      temperature: 0.3,
+      temperature: 0,
+      seed: 42,
       max_tokens: 3000,
     });
 
@@ -64,6 +84,9 @@ ${pdfText}`;
     const analysis = JSON.parse(raw);
 
     const result = { text: pdfText.slice(0, 500), ...analysis };
+
+    // Cache the result for future identical requests
+    analysisCache.set(contentHash, result);
 
     // Save to DB if user is logged in
     try {
