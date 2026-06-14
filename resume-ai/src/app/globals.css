@@ -24,24 +24,29 @@
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #0f172a;
+  --background: #faf9f7;
+  --foreground: #1e1b4b;
   --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #2563eb;
+  --card-foreground: #1e1b4b;
+  --primary: #4f46e5;
   --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #1e293b;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --accent: #f1f5f9;
-  --accent-foreground: #1e293b;
-  --destructive: #ef4444;
+  --secondary: #f5f3ff;
+  --secondary-foreground: #4338ca;
+  --muted: #f3f4f6;
+  --muted-foreground: #78716c;
+  --accent: #fef3c7;
+  --accent-foreground: #92400e;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #2563eb;
-  --radius: 0.625rem;
+  --border: #e7e5e4;
+  --input: #e7e5e4;
+  --ring: #4f46e5;
+  --radius: 0.75rem;
+}
+
+body {
+  background: linear-gradient(135deg, #faf9f7 0%, #f0eeff 50%, #faf9f7 100%);
+  min-height: 100vh;
 }
 
 @media (prefers-color-scheme: dark) {

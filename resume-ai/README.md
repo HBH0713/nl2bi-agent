@@ -4,8 +4,20 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://typescriptlang.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Auth+DB-green)](https://supabase.com)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue)](https://docker.com)
+[![CI](https://github.com/HBH0713/resume-ai/actions/workflows/test.yml/badge.svg)](https://github.com/HBH0713/resume-ai/actions)
+[![Vercel](https://img.shields.io/badge/Vercel-deployed-black)](https://resume-qg0vn9m5l-hbh-s-projects1.vercel.app)
 
 **上传简历 PDF → AI 评分 → 优化建议 → JD 匹配 → 面试题生成**
+
+## 📸 效果展示
+
+| 上传分析 | AI 评分 + 优化建议 |
+|------|------|
+| ![分析](public/screenshots/analyze.png) | ![结果](public/screenshots/results.png) |
+
+| JD 匹配 | 历史详情 |
+|------|------|
+| ![匹配](public/screenshots/match.png) | ![历史](public/screenshots/history-detail.png) |
 
 ## ✨ 功能
 
